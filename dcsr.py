@@ -214,7 +214,7 @@ class DCSRStatus(CSRStatus, DCSR):
             If constructed with `reset=True`, this signal can be written
             in order to reset the underlying storage, even if the storage
             is not normally writeable.
-        o (:obj:`dict` of :obj:`Signal()`): Dictionary containing all outgoing `Field`s.
+        w (:obj:`dict` of :obj:`Signal()`): Dictionary containing all outgoing `Field`s.
             If this CSR is `wirable`, then this dictionary contains one
             entry for each :obj:`Field` that is present.  These are all writeable.
     """
