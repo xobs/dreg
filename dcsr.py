@@ -269,6 +269,7 @@ class DCSRStatus(CSRStatus, DCSR):
 class Field:
     """Describes a Field for use in a :obj:`CSRStorage` or :obj:`CSRStatus`"""
     def __init__(self, name, size=1, offset=None, description=None, values=None,
+                             min=None, max=None,
                              pulse=False, readable=True, writeable=True, hidden=False):
         """Create a :obj:`Field`
 
@@ -286,16 +287,20 @@ class Field:
                 Use this to provide a freeform description of this particular field.
                 This will be used when the datasheet is generated in order to
                 describe this particular field, so be descriptive.
-            values (:obj:`list` of (:obj:`str`, :obj:`str`)): A list of supported values.
+            values (:obj:`list` of (:obj:`str`, :obj:`str`) or (:obj:`str`, :obj:`str`, :obj:`str`)): A list of supported values.
                 If this is specified, a table will be generated containing the values
-                you specify, in the order you specify.  These are freeform,
-                and will be displayed in the order you specify.  They must be tuples
-                of (value, description).  For example:
+                you specify, in the order you specify.  The `value` must be an
+                integer in order to allow for automatic constant generation in an IDE,
+                except "do not care" bits are allowed.
+                In the three-tuple variation, the middle value represents an enum value
+                that can be displayed instead of the value.
                     [
                         ("0b0000", "disable the timer"),
-                        ("0b0001", "slow timer"),
+                        ("0b0001", "slow", "slow timer"),
                         ("0b1xxx", "fast timer"),
                     ]
+            min (int): Minimum allowed value, if any
+            max (int): Maximum allowed value, if any
             pulse (bool): `True` if the value is only active for one cycle.
                 If `True`, then when this value is written as `1` by the host,
                 it will only be `1` for one cycle in the Migen code.  This can be
@@ -312,16 +317,27 @@ class Field:
         """
         if not name.isidentifier():
             raise ValueError("{} is not a valid Python identifier".format(name))
+        if True in map(lambda l: l.isupper(), name):
+            print("WARNING: name {} will be made lowercase".format(name))
+            name = name.lower()
 
+        # Esnure that a size is specified
         if not isinstance(size, int):
             raise ValueError("'size' is not an int")
         if size < 1:
             raise ValueError("'size' must be >= 1")
+
+        # Validate the offset value
         if isinstance(offset, int):
             if offset < 0:
                 raise ValueError("'offset' must be >= 0")
+        # Let users omit offset, and specify the description instead
+        elif isinstance(offset, str) and description is None:
+            description = offset
+            offset = None
         elif offset is not None:
             raise ValueError("'offset' must be an int, or None")
+
         self.name = name
         self.size = size
         self.offset = offset
@@ -331,3 +347,5 @@ class Field:
         self.pulse = pulse
         self.values = values
         self.hidden = hidden
+        self.min = min
+        self.max = max
